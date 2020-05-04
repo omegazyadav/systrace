@@ -11,6 +11,11 @@
 
 int main(int argc,char *argv[]) 
 {
+    if(argc < 2) {
+        fprintf(stdout,"Usage: %s [command]\n",argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
     long orig_rax,rax;
     int status,count=0;
     pid_t pid;
