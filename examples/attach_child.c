@@ -14,7 +14,8 @@ int main(int argc, char *argv[])
     int orig_rax,rax;
     int status,pid,ret;
 
-    /* Bring the process from /proc direcotory and attach to the ptrace 
+    /* 
+     * Bring the process from /proc direcotory and attach to the ptrace 
      * For this we use command line arguments and to convert the stirng 
      * into the signed long type integer strtol() syscall. 
      */
@@ -30,14 +31,28 @@ int main(int argc, char *argv[])
     if(ptrace(PTRACE_ATTACH,pid,0,0)!=0)
         printf("Couldnot attach the user \n");
 
-    ret=waitpid(pid,&status,WUNTRACED);
 
     /* 
      * Now check what the process was executing in the /proc directory. 
      */
-    orig_rax=ptrace(PTRACE_SYSCALL,pid,8*ORIG_RAX,0);
-    printf("The syscall associated with the child is %d\n",orig_rax);
 
-    return 0;
+       while(1) {
+            wait(&status);
+            ptrace(PTRACE_SETOPTIONS,pid,0,PTRACE_O_EXITKILL);
 
-}
+            if(WIFEXITED(status))
+            break;
+            struct user_regs_struct regs;
+            ptrace(PTRACE_GETREGS, pid, 0, &regs);
+             long syscall = regs.orig_rax;
+
+            /* Print a representation of the system call */
+                fprintf(stderr, "%ld(%ld, %ld, %ld, %ld, %ld, %ld)\n",
+                syscall,
+                (long)regs.rdi, (long)regs.rsi, (long)regs.rdx,
+                (long)regs.r10, (long)regs.r8,  (long)regs.r9);
+
+
+            ptrace(PTRACE_SYSCALL,pid,NULL,NULL);
+        }
+    }
